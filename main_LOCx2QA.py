@@ -19,6 +19,8 @@ start_command = [0x4E, 0x1C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x1C, 0x0
 
 read_command = [0x4F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
 
+param_check_array = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x00, 0xFFF, 0x00]
+
 correct_error_count = [0]*20
 scan_time = 10 #seconds
 
@@ -101,16 +103,22 @@ def locx2_start(visa_resource):
 
 
 
+#TODO: I need to limit the number of bytes I read
 def locx2_read(visa_resource):
     read_command_string = testing_utils.array_to_bitstring(read_command) 
-    response = visa_resource.query(read_command_string)
-    #TODO: finish this
+    response_string = visa_resource.query(read_command_string)
+    return testing_utils.to_integer(response_string)
 
 
 
-def param_check(register_values):
-    #TODO: finish this
-    print("UNDEFINED")
+def param_check(params):
+    check_array =  params[1][0:2]
+    check_array += params[1][8:12]
+    check_array += params[1][25]
+    check_array += params[1][24]
+    check_array += params[1][26]
+    check_array += [0xAA]
+    return check_array
 
 
 
