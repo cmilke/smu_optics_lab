@@ -21,10 +21,11 @@ def array_to_bitstring(array, bits_per_element):
         bitstring += to_bits(value,bits_per_element,False)
     return bitstring
     
-    
-def array_to_asciistring(array):
-    asciistring = ''
+   
+   
+def array_to_rawbytes(array):
+    rawbytes = bytes()
     for value in array:
-        asciistring += chr(value)
-    return asciistring
+        rawbytes += bytes.fromhex( format(value,'02x') )
+    return rawbytes
 

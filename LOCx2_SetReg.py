@@ -60,17 +60,14 @@ def usb_12c_wr(visa_resource_name, write_mode, read_mode, command):
 
     if write_mode:
         print(command)
-        command_string = testing_utils.array_to_asciistring(command)
-        print(command_string)
+        command_bytes = testing_utils.array_to_rawbytes(command)
         print("SENDING STRING")
-        com10_instrument.write_ascii_values(command_string)
+        print( com10_instrument.write_raw(command_bytes) )
         print()
     time.sleep(.5) #500 milliseconds
     data_read=-1
     if read_mode:
         data_read = com10_instrument.read()
-
-    #TODO: display read string and bytes read
     com10_instrument.close()
     return data_read
 
