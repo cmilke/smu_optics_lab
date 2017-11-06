@@ -5,7 +5,7 @@ import testing_utils
 
 
 
-com10_visa_string = 'COM8'
+usb_iss_name = 'COM8'
 adc_enum = {'NevisADC':0, 'ADS5272':1, 'ADS5294':2, 'Testmode':3}
 ref_clk_delay = 0
 delay_array = [17,17,17,17]
@@ -49,26 +49,34 @@ def locx2_regs_gen(adc_type, ref_clk_delay, delay_array):
 
 
 
+def open_usb_iss(visa_resource_name):
+    usb_iss = visa.ResourceManager().open_resource(visa_resource_name)
+    usb_iss.open_timeout=10000 #10 seconds
+    usb_iss.baud_rate=9600
+    usb_iss.data_bits=8
+    usb_iss.resource_pyclass=pyvisa.resources.SerialInstrument
+    usb_iss.parity=pyvisa.constants.Parity.none
+    usb_iss.end_input=pyvisa.constants.SerialTermination.none
+    usb_iss.stop_bits = pyvisa.constants.StopBits.one
+    
+    return usb_iss
+    
+    
+    
 def usb_12c_wr(visa_resource_name, write_mode, read_mode, command):
-    com10_instrument = visa.ResourceManager().open_resource(visa_resource_name,
-                                                            open_timeout=10000, #10 seconds
-                                                            baud_rate=9600,
-                                                            data_bits=8,
-                                                            resource_pyclass=pyvisa.resources.SerialInstrument,
-                                                            parity=pyvisa.constants.Parity.none,
-                                                            stop_bits = pyvisa.constants.StopBits.one)
-
+    usb_iss = open_usb_iss(visa_resource_name)
     if write_mode:
-        print(command)
         command_bytes = testing_utils.array_to_rawbytes(command)
-        print("SENDING STRING")
-        print( com10_instrument.write_raw(command_bytes) )
-        print()
+        print( "SENDING COMMAND: " + str(command) )
+        print( usb_iss.write_raw(command_bytes) )
     time.sleep(.5) #500 milliseconds
     data_read=-1
     if read_mode:
-        data_read = com10_instrument.read()
-    com10_instrument.close()
+        bytes_to_read = usb_iss.bytes_in_buffer
+        print("READING " + str(bytes_to_read) + " BYTES")
+        print( usb_iss.read_raw(size=bytes_to_read) )
+    usb_iss.close()
+    print()
     return data_read
 
 
@@ -78,27 +86,28 @@ def display_test_results(test_passed):
     print('Did test pass? ' + str(test_passed) )
 
 
+
 adc_name = 'NevisADC'
 adc_type = adc_enum[adc_name]
 generated_byte_array = locx2_regs_gen(adc_type, ref_clk_delay, delay_array)
-usb_12c_wr(com10_visa_string, True, False, init_command)
+
 print("Filling Registers\n\n")
+usb_12c_wr(usb_iss_name, True, False, init_command)
 for register_number in range( len(write_register_array) ):
     write_register = write_register_array[register_number]
     generated_byte = generated_byte_array[register_number]
     write_command = [0x53, write_register, generated_byte]
-    usb_12c_wr(com10_visa_string, True, False, write_command)
-print("\n\nDONE")
-exit(0)
+    usb_12c_wr(usb_iss_name, True, False, write_command)
 
-usb_12c_wr(com10_visa_string, True, False, init_command)
+print("Reading Back Registers")
 values_read = []
 read_comparison_failed = False
+usb_12c_wr(usb_iss_name, True, False, init_command)
 for register_number in range( len(read_register_array) ):
     read_register = read_register_array[register_number]
     generated_byte = generated_byte_array[register_number]
     read_command = [0x53, read_register]
-    data_read_out = usb_12c_wr(com10_visa_string, True, True, read_command)
+    data_read_out = usb_12c_wr(usb_iss_name, True, True, read_command)
     #TODO: print read_command out
 
     comparison_byte = data_read_out[0]
