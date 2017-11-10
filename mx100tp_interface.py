@@ -10,19 +10,19 @@ def configure_current_limit(mx100tp, channel, current_limit):
     
 def measure_current(mx100tp, channel):
     command_string = "I" + str(channel) +"O?"
-    mx100tp.write(command_string)    
+    return mx100tp.query(command_string)
     
     
     
 def configure_voltage_level(mx100tp, channel, voltage_level):
-    command_string = "V" + str(channel) + " " + str(current_limit)
+    command_string = "V" + str(channel) + " " + str(voltage_level)
     mx100tp.write(command_string)
     
     
     
 def measure_voltage(mx100tp, channel):
     command_string = "V" + str(channel) +"O?"
-    mx100tp.write(command_string)
+    return mx100tp.query(command_string)
 
     
     
