@@ -54,9 +54,11 @@ def open_usb_iss(visa_resource_name):
     usb_iss.open_timeout=10000 #10 seconds
     usb_iss.baud_rate=9600
     usb_iss.data_bits=8
-    usb_iss.resource_pyclass=pyvisa.resources.SerialInstrument
-    usb_iss.parity=pyvisa.constants.Parity.none
-    usb_iss.end_input=pyvisa.constants.SerialTermination.none
+    usb_iss.resource_pyclass = pyvisa.resources.SerialInstrument
+    usb_iss.parity = pyvisa.constants.Parity.none
+    usb_iss.end_input = pyvisa.constants.SerialTermination.none
+    usb_iss.read_termination = None
+    usb_iss.write_termination = None
     usb_iss.stop_bits = pyvisa.constants.StopBits.one
     
     return usb_iss
@@ -74,7 +76,10 @@ def usb_12c_wr(visa_resource_name, write_mode, read_mode, command):
     if read_mode:
         bytes_to_read = usb_iss.bytes_in_buffer
         print("READING " + str(bytes_to_read) + " BYTES")
-        print( usb_iss.read_raw(size=bytes_to_read) )
+        #usb_iss.read_raw( size = (bytes_to_read) )
+        raw_byte, status = usb_iss.visalib.read(usb_iss.session, bytes_to_read )
+        data_read = int.from_bytes(raw_byte, byteorder='big')
+        print( "READ " + str(data_read) )
     usb_iss.close()
     print()
     return data_read
@@ -110,12 +115,9 @@ for register_number in range( len(read_register_array) ):
     data_read_out = usb_12c_wr(usb_iss_name, True, True, read_command)
     #TODO: print read_command out
 
-    comparison_byte = data_read_out[0]
+    comparison_byte = data_read_out
     values_read.append(comparison_byte)
     read_comparison_failed = comparison_byte != generated_byte
     if read_comparison_failed: break
 
-if read_comparison_failed:
-    display_test_results(False)
-
-#print generated_byte_array
+display_test_results(not read_comparison_failed)
