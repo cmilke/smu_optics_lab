@@ -4,7 +4,7 @@ import testing_utils
 
 
 
-visa_resource_name = ''
+visa_resource_name = 'COM4'
 register_value_file = 'register_values.dat'
 fpga_confirmation_response = '33'
 correct_status = [1,2,2,0,0]
@@ -73,46 +73,49 @@ def paramameter_generator(register_values):
 
 
 
-def set_parameters(visa_resource, register_values):
+def set_parameters(fpga, register_values):
     parameter_list = paramameter_generator(register_values)
     for parameter in parameter_list:
-        command = testing_utils.array_to_bitstring(parameter)
-        instrument_response = visa.query(command)
-        if instrument_response != fpga_confirmation_response:
+        command = bytes.fromhex( format(parameter,'02x') )
+        visa.write_raw(command)
+        response, status = fpga.visalib.read(fpga.session, 1 )
+        if response != fpga_confirmation_response:
             print("WrongAck on parameter setting")
             exit(1)
         time.sleep(0.1)
 
 
 
-def param_strobe(visa_resource):
-    strobe_command_string = testing_utils.array_to_bitstring(strobe_command) 
-    response = visa_resource.query(strobe_command_string)
+def param_strobe(fpga):
+    strobe_command_bytes = testing_utils.array_to_rawbytes(strobe_command) 
+    fpga.write_raw(strobe_command_bytes)
+    response, status = fpga.visalib.read(fpga.session, 2)
     if response != (fpga_confirmation_response + fpga_confirmation_response):
         print("WrongAck on strobe")
         exit(1)
 
 
 
-def locx2_start(visa_resource):
-    start_command_string = testing_utils.array_to_bitstring(start_command) 
-    response = visa_resource.query(start_command_string)
+def locx2_start(fpga):
+    start_command_bytes = testing_utils.array_to_rawbytes(start_command) 
+    fpga.write_raw(strobe_command_bytes)
+    response, status = fpga.visalib.read(fpga.session, 2)
     if response != (fpga_confirmation_response + fpga_confirmation_response):
         print("WrongAck on start")
         exit(1)
 
 
 
-#TODO: I need to limit the number of bytes I read
-def locx2_read(visa_resource):
-    read_command_string = testing_utils.array_to_bitstring(read_command) 
-    response_string = visa_resource.query(read_command_string)
-    return testing_utils.to_integer(response_string)
+def locx2_read(fpga):
+    read_command_bytes = testing_utils.array_to_rawbytes(read_command) 
+    fpga.write_raw(read_command_bytes)
+    response, status = fpga.visalib.read(fpga.session, 208)
+    return rawbytes_to_array(response)
 
 
 
 def param_check(params):
-    check_array =  params[1][0:2]
+    check_array  = params[1][0:2]
     check_array += params[1][8:12]
     check_array += params[1][25]
     check_array += params[1][24]
@@ -122,36 +125,37 @@ def param_check(params):
 
 
 
+def main():
+    register_values = read_register_values(register_value_file)
+    fpga = open_serial_port(visa_resource_name)
+    set_parameters(fpga, register_values)
+    param_strobe(fpga)
+    locx2_start(fpga)
+    time.sleep(0.1) #100 milliseconds
+    locx2_read(fpga)
+    params_written = param_check(register_values)
 
-register_values = read_register_values(register_value_file)
-visa_resource = open_serial_port(visa_resource_name)
-set_parameters(visa_resource, register_values)
-param_strobe(visa_resource)
-locx2_start(visa_resource)
-time.sleep(0.1) #100 milliseconds
-locx2_read(visa_resource)
-params_written = param_check(register_values)
+    reading_error = False
+    elapsed_time = 0.0
+    scan_start_time = time.time()
+    while (elapsed_time < scan_time):
+        ack = locx2_read(fpga)
+        error_count, params_read = data_extract(ack)
 
-reading_error = False
-elapsed_time = 0.0
-scan_start_time = time.time()
-while (  elapsed_time < scan_time):
-    ack = locx2_read(visa_resource)
-    status, error_count, params_read = data_extract(ack)
+        error_count_is_wrong = error_count != correct_error_count
+        params_read_are_wrong = params_read != params_written
 
-    status_is_wrong = status != correct_status
-    error_count_is_wrong = error_count != correct_error_count
-    params_read_are_wrong = params_read != params_written
-
-    if status_is_wrong or error_count_is_wrong or params_read_are_wrong:
-        reading_error = True
-        break
-    eleapsed_time = time.time() - scan_start_time
-
-
-#display where it failed in detail
-serial_close(visa_resource)
+        if error_count_is_wrong or params_read_are_wrong:
+            reading_error = True
+            break
+        eleapsed_time = time.time() - scan_start_time
 
 
+    #display where it failed in detail
+    serial_close(fpga)
+
+
+    
+main()
 
 

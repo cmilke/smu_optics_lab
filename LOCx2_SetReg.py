@@ -76,7 +76,6 @@ def usb_12c_wr(visa_resource_name, write_mode, read_mode, command):
     if read_mode:
         bytes_to_read = usb_iss.bytes_in_buffer
         print("READING " + str(bytes_to_read) + " BYTES")
-        #usb_iss.read_raw( size = (bytes_to_read) )
         raw_byte, status = usb_iss.visalib.read(usb_iss.session, bytes_to_read )
         data_read = int.from_bytes(raw_byte, byteorder='big')
         print( "READ " + str(data_read) )

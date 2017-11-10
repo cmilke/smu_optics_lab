@@ -21,6 +21,15 @@ def array_to_bitstring(array, bits_per_element):
         bitstring += to_bits(value,bits_per_element,False)
     return bitstring
     
+    
+    
+def rawbytes_to_array(rawbytes):
+    array = []
+    for byte in rawbytes:
+        value = int.from_bytes(byte, byteorder='big')
+        array.append(value)
+    return array
+    
    
    
 def array_to_rawbytes(array):
