@@ -15,18 +15,17 @@ def to_integer(bit_string, is_reversed):
         return int(bit_string,2)
 
 
-def array_to_bitstring(array, bits_per_element):
+def array_to_bitstring(array, bits_per_element, reverse):
     bitstring = ''
     for value in array:
-        bitstring += to_bits(value,bits_per_element,False)
+        bitstring += to_bits(value,bits_per_element,reverse)
     return bitstring
     
     
     
 def rawbytes_to_array(rawbytes):
     array = []
-    for byte in rawbytes:
-        value = int.from_bytes(byte, byteorder='big')
+    for value in rawbytes:
         array.append(value)
     return array
     
