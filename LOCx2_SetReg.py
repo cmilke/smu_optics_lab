@@ -39,9 +39,9 @@ def locx2_regs_gen(adc_type, ref_clk_delay, delay_array):
     print(adc_type_binary+' '+ref_clk_delay_value_binary)
     print(delay_piece0+' '+delay_piece1+' '+delay_piece2)
     print(delay_piece3+' '+delay_piece4+' '+delay_piece5)
-    command1 = testing_utils.to_integer(command_string1,True)
-    command2 = testing_utils.to_integer(command_string2,True)
-    command3 = testing_utils.to_integer(command_string3,True)
+    command1 = testing_utils.bitstring_to_integer(command_string1,True)
+    command2 = testing_utils.bitstring_to_integer(command_string2,True)
+    command3 = testing_utils.bitstring_to_integer(command_string3,True)
     print("COMMANDS: "+format(command1,'02x')+' '+format(command2,'02x')+' '+format(command3,'02x'))
 
     generated_bytes = [13,command1,command2,command3]

@@ -139,19 +139,73 @@ def param_check(params):
     return check_array
 
     
+#The values are loaded into the bitstring array BACKWARDS,
+#and then flipped back around in the second-to-last step
+#with the '[::-1]' construct.
+def extract_check_value(ack_bits):
+    split_locations = [ [0,8],[8,2],[10,2],[12,12] ]
     
+    chunk_size = 5
+    start_bit = 24
+    num_chunks = 6
+    split_locations += testing_utils.generate_consecutive_splits(start_bit, chunk_size, num_chunks)     
+    check_list = testing_utils.assemble_bitstring_into_int_list(ack_bits, split_locations[::-1], True)
+    return check_list
+    
+
+
+#As with the previous function, please note where the [::-1] is.
+#The payload_error_count has to be loaded backwards
+def extract_channel(ack_bits, sync_status_start, crc_flag_start, sync_loss_count_start, 
+                    crc_error_count_start, payload_error_count_start):
+    sync_status_size = 2
+    crc_flag_size = 1
+    error_count_length = 37
+    num_payload_pieces = 8
+    
+    assembler_instructions = [ [sync_status_start,sync_status_size],
+                               [crc_flag_start,crc_flag_size],
+                               [sync_loss_count_start,sync_status_size],
+                               [crc_error_count_start,error_count_length] ]
+    
+    assembler_instructions += testing_utils.generate_consecutive_splits(payload_error_count_start, error_count_length, num_payload_pieces)[::-1]
+    channel_results = testing_utils.assemble_bitstring_into_int_list(ack_bits, assembler_instructions, True)
+    return channel_results
+    
+
+
 def data_extract(ack):
-    print(ack)
     flipped_ack = []
     for n in range( 0, len(ack), 2):
         even_ack = ack[n]
         odd_ack = ack[n+1]
         flipped_ack.append(odd_ack)
         flipped_ack.append(even_ack)
-    ack_bits = '0'
-    ack_bits += testing_utils.array_to_bitstring(flipped_ack,8,True)
+    ack_bits = testing_utils.array_to_bitstring(flipped_ack,8,True)
     
-    return(0,0)
+    check_list = extract_check_value(ack_bits)
+    print('\ncheck_list:')
+    print(check_list)
+    
+    ch8_sync_status_start = 56
+    ch8_crc_flag_start = 83
+    ch8_sync_loss_count_start = 1021    
+    ch8_crc_error_count_start = 281
+    ch8_payload_error_count_start = 1354
+    channel_8_results = extract_channel(ack_bits, ch8_sync_status_start, ch8_crc_flag_start, ch8_sync_loss_count_start, ch8_crc_error_count_start, ch8_payload_error_count_start)
+    print('\nchannel 8 results:')
+    testing_utils.print_hex_list(channel_8_results)
+    
+    ch9_sync_status_start = 54
+    ch9_crc_flag_start = 82
+    ch9_sync_loss_count_start = 984    
+    ch9_crc_error_count_start = 281
+    ch9_payload_error_count_start = 1058
+    channel_9_results = extract_channel(ack_bits, ch9_sync_status_start, ch9_crc_flag_start, ch9_sync_loss_count_start, ch9_crc_error_count_start, ch9_payload_error_count_start)
+    print('\nchannel 9 results:')
+    print(channel_9_results)
+    
+    return(check_list, channel_8_results, channel_9_results)
 
 
 def main():
@@ -169,8 +223,8 @@ def main():
     scan_start_time = time.time()
     while (elapsed_time < scan_time):
         ack = locx2_read(fpga)
-        error_count, params_read = data_extract(ack)
-        stop(fpga,'')
+        check_list, ch8_results, ch9_results = data_extract(ack)
+        stop(fpga,'\nFinished without crash')
 
         error_count_is_wrong = error_count != correct_error_count
         params_read_are_wrong = params_read != params_written
