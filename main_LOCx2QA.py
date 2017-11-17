@@ -23,7 +23,7 @@ read_command = [0x4F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00
 param_check_array = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x00, 0xFFF, 0x00]
 
 correct_error_count = [0]*20
-scan_time = 10 #seconds
+
 
 
     
@@ -184,8 +184,6 @@ def data_extract(ack):
     ack_bits = testing_utils.array_to_bitstring(flipped_ack,8,True)
     
     check_list = extract_check_value(ack_bits)
-    print('\ncheck_list:')
-    print(check_list)
     
     ch8_sync_status_start = 56
     ch8_crc_flag_start = 83
@@ -193,8 +191,6 @@ def data_extract(ack):
     ch8_crc_error_count_start = 281
     ch8_payload_error_count_start = 1354
     channel_8_results = extract_channel(ack_bits, ch8_sync_status_start, ch8_crc_flag_start, ch8_sync_loss_count_start, ch8_crc_error_count_start, ch8_payload_error_count_start)
-    print('\nchannel 8 results:')
-    testing_utils.print_hex_list(channel_8_results)
     
     ch9_sync_status_start = 54
     ch9_crc_flag_start = 82
@@ -202,8 +198,6 @@ def data_extract(ack):
     ch9_crc_error_count_start = 281
     ch9_payload_error_count_start = 1058
     channel_9_results = extract_channel(ack_bits, ch9_sync_status_start, ch9_crc_flag_start, ch9_sync_loss_count_start, ch9_crc_error_count_start, ch9_payload_error_count_start)
-    print('\nchannel 9 results:')
-    print(channel_9_results)
     
     return(check_list, channel_8_results, channel_9_results)
 
@@ -221,20 +215,24 @@ def main():
     reading_error = False
     elapsed_time = 0.0
     scan_start_time = time.time()
+    scan_time = 10 #seconds
+    error_check_list = [2] + [0]*11
     while (elapsed_time < scan_time):
         ack = locx2_read(fpga)
-        check_list, ch8_results, ch9_results = data_extract(ack)
-        stop(fpga,'\nFinished without crash')
-
-        error_count_is_wrong = error_count != correct_error_count
+        params_read, ch8_results, ch9_results = data_extract(ack)
+        ch8_error_count_is_wrong = ch8_results != error_check_list
+        ch9_error_count_is_wrong = ch9_results != error_check_list
         params_read_are_wrong = params_read != params_written
 
-        if error_count_is_wrong or params_read_are_wrong:
+        if ch8_error_count_is_wrong or ch9_error_count_is_wrong or params_read_are_wrong:
             reading_error = True
+            print( 'ch8 error? ' + str(ch8_error_count_is_wrong) )
+            print( 'ch9 error? ' + str(ch9_error_count_is_wrong) )
+            print( 'parameter check error? ' + str(params_read_are_wrong) )
             break
-        eleapsed_time = time.time() - scan_start_time
-
-
+        time.sleep(0.5)
+        elapsed_time = time.time() - scan_start_time
+        print(elapsed_time)
     #display where it failed in detail
     fpga.close()
 

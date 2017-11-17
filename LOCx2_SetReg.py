@@ -91,32 +91,33 @@ def display_test_results(test_passed):
 
 
 
-adc_name = 'NevisADC'
-adc_type = adc_enum[adc_name]
-generated_byte_array = locx2_regs_gen(adc_type, ref_clk_delay, delay_array)
+def main():
+    adc_name = 'NevisADC'
+    adc_type = adc_enum[adc_name]
+    generated_byte_array = locx2_regs_gen(adc_type, ref_clk_delay, delay_array)
 
-print("Filling Registers\n\n")
-usb_12c_wr(usb_iss_name, True, False, init_command)
-for register_number in range( len(write_register_array) ):
-    write_register = write_register_array[register_number]
-    generated_byte = generated_byte_array[register_number]
-    write_command = [0x53, write_register, generated_byte]
-    usb_12c_wr(usb_iss_name, True, False, write_command)
+    print("Filling Registers\n\n")
+    usb_12c_wr(usb_iss_name, True, False, init_command)
+    for register_number in range( len(write_register_array) ):
+        write_register = write_register_array[register_number]
+        generated_byte = generated_byte_array[register_number]
+        write_command = [0x53, write_register, generated_byte]
+        usb_12c_wr(usb_iss_name, True, False, write_command)
 
-print("Reading Back Registers")
-values_read = []
-read_comparison_failed = False
-usb_12c_wr(usb_iss_name, True, False, init_command)
-for register_number in range( len(read_register_array) ):
-    read_register = read_register_array[register_number]
-    generated_byte = generated_byte_array[register_number]
-    read_command = [0x53, read_register]
-    data_read_out = usb_12c_wr(usb_iss_name, True, True, read_command)
-    #TODO: print read_command out
+    print("Reading Back Registers")
+    values_read = []
+    read_comparison_failed = False
+    usb_12c_wr(usb_iss_name, True, False, init_command)
+    for register_number in range( len(read_register_array) ):
+        read_register = read_register_array[register_number]
+        generated_byte = generated_byte_array[register_number]
+        read_command = [0x53, read_register]
+        data_read_out = usb_12c_wr(usb_iss_name, True, True, read_command)
+        #TODO: print read_command out
 
-    comparison_byte = data_read_out
-    values_read.append(comparison_byte)
-    read_comparison_failed = comparison_byte != generated_byte
-    if read_comparison_failed: break
+        comparison_byte = data_read_out
+        values_read.append(comparison_byte)
+        read_comparison_failed = comparison_byte != generated_byte
+        if read_comparison_failed: break
 
-display_test_results(not read_comparison_failed)
+    display_test_results(not read_comparison_failed)
