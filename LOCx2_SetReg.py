@@ -5,10 +5,7 @@ import testing_utils
 
 
 
-usb_iss_name = 'COM8'
 adc_enum = {'NevisADC':0, 'ADS5272':1, 'ADS5294':2, 'Testmode':3}
-ref_clk_delay = 0
-delay_array = [17,17,17,17]
 write_register_array = [0x0,0x2,0x4,0x6]
 read_register_array = [0x1,0x3,0x5,0x7]
 init_command = [0x5A,0x2,0x60]
@@ -91,9 +88,9 @@ def display_test_results(test_passed):
 
 
 
-def main():
-    adc_name = 'NevisADC'
+def main(ref_clk_delay, sclk_delay, adc_name, usb_iss_name):
     adc_type = adc_enum[adc_name]
+    delay_array = [sclk_delay]*4
     generated_byte_array = locx2_regs_gen(adc_type, ref_clk_delay, delay_array)
 
     print("Filling Registers\n\n")

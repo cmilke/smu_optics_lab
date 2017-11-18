@@ -5,7 +5,6 @@ import testing_utils
 
 
 
-visa_resource_name = 'COM4'
 register_value_file = 'register_values.dat'
 fpga_confirmation_response = bytes('3','ascii')
 correct_status = [1,2,2,0,0]
@@ -202,9 +201,9 @@ def data_extract(ack):
     return(check_list, channel_8_results, channel_9_results)
 
 
-def main():
+def main(fpga_resource_id, scan_time):
     register_values = read_register_values(register_value_file)
-    fpga = open_serial_port(visa_resource_name)
+    fpga = open_serial_port(fpga_resource_id)
     set_parameters(fpga, register_values)
     param_strobe(fpga)
     locx2_start(fpga)
@@ -215,7 +214,6 @@ def main():
     reading_error = False
     elapsed_time = 0.0
     scan_start_time = time.time()
-    scan_time = 10 #seconds
     error_check_list = [2] + [0]*11
     while (elapsed_time < scan_time):
         ack = locx2_read(fpga)
