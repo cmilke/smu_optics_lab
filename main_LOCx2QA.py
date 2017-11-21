@@ -235,7 +235,3 @@ def main(fpga_resource_id, scan_time):
     fpga.close()
 
 
-	
-main()
-
-

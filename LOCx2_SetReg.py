@@ -82,12 +82,6 @@ def usb_12c_wr(visa_resource_name, write_mode, read_mode, command):
 
 
 
-#TODO: make this more elaborate
-def display_test_results(test_passed):
-    print('Did test pass? ' + str(test_passed) )
-
-
-
 def main(ref_clk_delay, sclk_delay, adc_name, usb_iss_name):
     adc_type = adc_enum[adc_name]
     delay_array = [sclk_delay]*4
@@ -117,4 +111,4 @@ def main(ref_clk_delay, sclk_delay, adc_name, usb_iss_name):
         read_comparison_failed = comparison_byte != generated_byte
         if read_comparison_failed: break
 
-    display_test_results(not read_comparison_failed)
+    return not read_comparison_failed
