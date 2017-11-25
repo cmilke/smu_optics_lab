@@ -24,10 +24,11 @@ class Safe_zone:
         elif not self.is_safe_haven and other.is_safe_haven:
             return True
         #with equal safe_haven status, edge distance decides ordering,
-        #and the product of edge distances makes for a nice weighting metric
+        #and the product of edge distances divided by their sum 
+        #makes for a nice weighting metric: ab/(a+b) = 1/(1/a+1/b)
         else:
-            my_distance_metric = self.distance_from_low_edge * self.distance_from_high_edge
-            their_distance_metric = other.distance_from_low_edge * other.distance_from_high_edge
+            my_distance_metric = 1.0 / ( 1.0/self.distance_from_low_edge + 1.0/self.distance_from_high_edge )
+            their_distance_metric = 1.0 / ( 1.0/other.distance_from_low_edge + 1.0/other.distance_from_high_edge )
             return my_distance_metric < their_distance_metric
              
 
