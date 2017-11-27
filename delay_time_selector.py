@@ -25,9 +25,7 @@ class Safe_zone:
 
 
 def search_sclk_delay_list(refclk_index, sclk_delay_list, safe_zones, dead_zones):
-    max_bad_zones = 3
     start_index = 0
-    stop_index = -1
     indices_since_last_safe_zone = 0
     in_safe_region = False
     temporary_safe_zone_list = []
@@ -37,22 +35,15 @@ def search_sclk_delay_list(refclk_index, sclk_delay_list, safe_zones, dead_zones
                 temporary_safe_zone_list.append( Safe_zone(refclk_index,sclk_index,start_index) )
                 indices_since_last_safe_zone = 0
             else:
-                if indices_since_last_safe_zone >= max_bad_zones:
-                    for i in range(indices_since_last_safe_zone):
-                        dead_zones.pop()
-                    stop_index = index - indices_since_last_safe_zone
-                    break
-                else:
-                    dead_zones.append( (refclk_index, sclk_index) )
-                    indices_since_last_safe_zone += 1
+                dead_zones.append( (refclk_index, sclk_index) )
+                indices_since_last_safe_zone += 1
         elif test_was_succesful:
             start_index = sclk_index
             temporary_safe_zone_list.append( Safe_zone(refclk_index,sclk_index,start_index) )
             in_safe_region = True
-    if stop_index == -1:
-        for i in range(indices_since_last_safe_zone):
-            dead_zones.pop()
-        stop_index = len(sclk_delay_list) - indices_since_last_safe_zone
+    stop_index = len(sclk_delay_list) - indices_since_last_safe_zone
+    for i in range(indices_since_last_safe_zone):
+        dead_zones.pop()
 
     for zone in temporary_safe_zone_list:
         zone.distance_from_high_edge = stop_index - zone.delay_index[1] + 1 #+1: see class init definition
@@ -136,6 +127,7 @@ def select(delay_list):
     print('Optimal delay time chosen as: ',end='')
     print(optimal_safe_zone_index)
     print('Delay time selection map:')
+    display_delay_values(delay_list, safe_zones=safe_zones, dead_zones=dead_zones)
     display_delay_values(delay_list, optimal_zone=optimal_safe_zone_index)
     return optimal_safe_zone_index
 
@@ -143,9 +135,10 @@ def select(delay_list):
 
 
 
-list1 = [[0,0,0,0,1,1,1,0,1,1,0,0],
-         [0,0,0,0,1,0,1,1,1,0,0,0],
-         [0,0,0,0,1,1,1,1,1,1,0,0]]
-
-selection = select(list1)
+#Example list
+#list1 = [[0,0,1,1,0,1,0,0,1,1,0,0],
+#         [0,0,1,1,1,0,1,1,1,0,0,0],
+#         [0,0,0,0,1,1,1,1,1,1,0,0]]
+#
+#selection = select(list1)
 
