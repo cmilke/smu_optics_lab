@@ -39,7 +39,7 @@ def locx2_regs_gen(adc_type, ref_clk_delay, delay_array):
     command1 = testing_utils.bitstring_to_integer(command_string1,True)
     command2 = testing_utils.bitstring_to_integer(command_string2,True)
     command3 = testing_utils.bitstring_to_integer(command_string3,True)
-    print("COMMANDS: "+format(command1,'02x')+' '+format(command2,'02x')+' '+format(command3,'02x'))
+    print("Commands: "+format(command1,'02x')+' '+format(command2,'02x')+' '+format(command3,'02x'))
 
     generated_bytes = [13,command1,command2,command3]
     return generated_bytes
@@ -66,28 +66,28 @@ def usb_12c_wr(visa_resource_name, write_mode, read_mode, command):
     usb_iss = open_usb_iss(visa_resource_name)
     if write_mode:
         command_bytes = testing_utils.array_to_rawbytes(command)
-        print( "SENDING COMMAND: " + str(command) )
+        print( "Sending command: " + str(command) )
         print( usb_iss.write_raw(command_bytes) )
     time.sleep(.5) #500 milliseconds
     data_read=-1
     if read_mode:
         bytes_to_read = usb_iss.bytes_in_buffer
-        print("READING " + str(bytes_to_read) + " BYTES")
+        print("Reading " + str(bytes_to_read) + " bytes")
         raw_byte, status = usb_iss.visalib.read(usb_iss.session, bytes_to_read )
         data_read = int.from_bytes(raw_byte, byteorder='big')
-        print( "READ " + str(data_read) )
+        print( "Read " + str(data_read) )
     usb_iss.close()
     print()
     return data_read
 
 
 
-def main(ref_clk_delay, sclk_delay, adc_name, usb_iss_name):
+def main(ref_clk_delay, sclk_delay, adc_name, usb_iss_name, report):
     adc_type = adc_enum[adc_name]
     delay_array = [sclk_delay]*4
     generated_byte_array = locx2_regs_gen(adc_type, ref_clk_delay, delay_array)
 
-    print("Filling Registers\n\n")
+    print("I2C is filling registers\n\n")
     usb_12c_wr(usb_iss_name, True, False, init_command)
     for register_number in range( len(write_register_array) ):
         write_register = write_register_array[register_number]
@@ -95,8 +95,7 @@ def main(ref_clk_delay, sclk_delay, adc_name, usb_iss_name):
         write_command = [0x53, write_register, generated_byte]
         usb_12c_wr(usb_iss_name, True, False, write_command)
 
-    print("Reading Back Registers")
-    values_read = []
+    print("I2C is reading back registers")
     read_comparison_failed = False
     usb_12c_wr(usb_iss_name, True, False, init_command)
     for register_number in range( len(read_register_array) ):
@@ -104,10 +103,7 @@ def main(ref_clk_delay, sclk_delay, adc_name, usb_iss_name):
         generated_byte = generated_byte_array[register_number]
         read_command = [0x53, read_register]
         data_read_out = usb_12c_wr(usb_iss_name, True, True, read_command)
-        #TODO: print read_command out
-
         comparison_byte = data_read_out
-        values_read.append(comparison_byte)
         read_comparison_failed = comparison_byte != generated_byte
         if read_comparison_failed: break
 

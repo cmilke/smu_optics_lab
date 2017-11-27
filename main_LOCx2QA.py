@@ -1,6 +1,7 @@
 import visa
 import pyvisa
 import time
+import mx100tp_interface
 import testing_utils
 
 
@@ -201,15 +202,20 @@ def data_extract(ack):
     return(check_list, channel_8_results, channel_9_results)
 
 
-def main(fpga_resource_id, scan_time):
+def main(fpga_resource_id, scan_time, mx100tp, report):
     register_values = read_register_values(register_value_file)
     fpga = open_serial_port(fpga_resource_id)
     set_parameters(fpga, register_values)
+    print('\nLOCx2 parameters set, ', end='')
     param_strobe(fpga)
+    print(' strobed, and ', end='')
     locx2_start(fpga)
+    print('started')
     time.sleep(0.1) #100 milliseconds
     locx2_read(fpga)
+    print('Writing parameters...')
     params_written = param_check(register_values)
+    print('LOCx2 parameters written, beginning test loop:')
 
     reading_error = False
     elapsed_time = 0.0
@@ -228,10 +234,12 @@ def main(fpga_resource_id, scan_time):
             print( 'ch9 error? ' + str(ch9_error_count_is_wrong) )
             print( 'parameter check error? ' + str(params_read_are_wrong) )
             break
+
         time.sleep(0.5)
+        current = mx100tp_interface.measure_current(mx100tp, 1)
         elapsed_time = time.time() - scan_start_time
-        print(elapsed_time)
-    #display where it failed in detail
+        status_update = 'Time passed = '+str(elapsed_time)+' ; IDD (A) = '+str(current)
+        print(status_update)
+        report.append(status_update)
     fpga.close()
-
-
+    return reading_error
