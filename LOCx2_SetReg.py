@@ -107,4 +107,8 @@ def main(ref_clk_delay, sclk_delay, adc_name, usb_iss_name, report):
         read_comparison_failed = comparison_byte != generated_byte
         if read_comparison_failed: break
 
+    if read_comparison_failed:
+        print("An error was encountered while reading back registers!")
+    else:
+        print("I2C has finished reading registers")
     return not read_comparison_failed

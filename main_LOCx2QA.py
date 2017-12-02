@@ -177,6 +177,7 @@ def extract_channel(ack_bits, sync_status_start, crc_flag_start, sync_loss_count
 def data_extract(ack):
     flipped_ack = []
     for n in range( 0, len(ack), 2):
+        #FIXME: there's some kind of out-of-bounds error here
         even_ack = ack[n]
         odd_ack = ack[n+1]
         flipped_ack.append(odd_ack)
@@ -205,6 +206,7 @@ def data_extract(ack):
 def main(fpga_resource_id, scan_time, mx100tp, report):
     register_values = read_register_values(register_value_file)
     fpga = open_serial_port(fpga_resource_id)
+    print('Setting LOCx2 parameters:')
     set_parameters(fpga, register_values)
     print('\nLOCx2 parameters set, ', end='')
     param_strobe(fpga)

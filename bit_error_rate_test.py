@@ -5,8 +5,10 @@ import delay_time_selector
 import visa
 import time
 
-usb_iss_resource_id = 'COM8'
-fpga_resource_id = 'COM4'
+#usb_iss_resource_id = 'COM8'
+#fpga_resource_id = 'COM4'
+usb_iss_resource_id = 'ASRL7::INSTR'
+fpga_resource_id = 'ASRL8::INSTR'
 mx100tp_resource_id = 'GPIB0::11::INSTR'
 
 mx100tp = visa.ResourceManager().open_resource(mx100tp_resource_id)
@@ -54,11 +56,8 @@ for voltage, test_time in voltage_time_pair:
     for ref_clk_delay in ref_clk_delay_list:
         sclk_delay_success_list = []
         for sclk_delay in sclk_delay_list:
-            success = main_test(ref_clk_delay, sclk_delay, 'NevisADC', short_test_time, report)
+            success = main_test(ref_clk_delay, sclk_delay, 'NevisADC', short_test_time, mx100tp, report)
             sclk_delay_success_list.append(success)
-            print("FINISHED MAIN")
-            mx100tp.close()
-            exit(0)
         delay_success_list.append(sclk_delay_success_list)
     optimal_ref_clk_delay, optimal_sclk_delay = find_optimal_delay_values(delay_success_list)
     
