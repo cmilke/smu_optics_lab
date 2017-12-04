@@ -114,7 +114,7 @@ def display_safe_zones(sorted_safe_zones):
         print(safe_zone.delay_index)
 
 
-def select(delay_list):
+def select(delay_list, report):
     safe_zones = {}
     dead_zones = []
     for refclk_index, sclk_delay_list in enumerate(delay_list):

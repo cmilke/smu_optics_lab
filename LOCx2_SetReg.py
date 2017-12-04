@@ -27,19 +27,14 @@ def locx2_regs_gen(adc_type, ref_clk_delay, delay_array):
     delay_piece5 = delay_binary[3][0:5]
 
     adc_type_binary = testing_utils.to_bits(adc_type,16,True)[0:2]
-    ref_clk_delay_value = [0x0,0x1,0x3][ref_clk_delay]
-    ref_clk_delay_value_binary = testing_utils.to_bits(ref_clk_delay_value,8,True)[0:2]
+    ref_clk_delay_value_binary = testing_utils.to_bits(ref_clk_delay,8,True)[0:2]
 
     command_string1 = adc_type_binary + ref_clk_delay_value_binary + delay_piece0
     command_string2 = delay_piece1 + delay_piece2 + delay_piece3
     command_string3 = delay_piece4 + delay_piece5
-    print(adc_type_binary+' '+ref_clk_delay_value_binary)
-    print(delay_piece0+' '+delay_piece1+' '+delay_piece2)
-    print(delay_piece3+' '+delay_piece4+' '+delay_piece5)
     command1 = testing_utils.bitstring_to_integer(command_string1,True)
     command2 = testing_utils.bitstring_to_integer(command_string2,True)
     command3 = testing_utils.bitstring_to_integer(command_string3,True)
-    print("Commands: "+format(command1,'02x')+' '+format(command2,'02x')+' '+format(command3,'02x'))
 
     generated_bytes = [13,command1,command2,command3]
     return generated_bytes
@@ -66,18 +61,14 @@ def usb_12c_wr(visa_resource_name, write_mode, read_mode, command):
     usb_iss = open_usb_iss(visa_resource_name)
     if write_mode:
         command_bytes = testing_utils.array_to_rawbytes(command)
-        print( "Sending command: " + str(command) )
-        print( usb_iss.write_raw(command_bytes) )
+        usb_iss.write_raw(command_bytes)
     time.sleep(.5) #500 milliseconds
     data_read=-1
     if read_mode:
         bytes_to_read = usb_iss.bytes_in_buffer
-        print("Reading " + str(bytes_to_read) + " bytes")
         raw_byte, status = usb_iss.visalib.read(usb_iss.session, bytes_to_read )
         data_read = int.from_bytes(raw_byte, byteorder='big')
-        print( "Read " + str(data_read) )
     usb_iss.close()
-    print()
     return data_read
 
 
@@ -87,7 +78,7 @@ def main(ref_clk_delay, sclk_delay, adc_name, usb_iss_name, report):
     delay_array = [sclk_delay]*4
     generated_byte_array = locx2_regs_gen(adc_type, ref_clk_delay, delay_array)
 
-    print("I2C is filling registers\n\n")
+    print("I2C is filling registers")
     usb_12c_wr(usb_iss_name, True, False, init_command)
     for register_number in range( len(write_register_array) ):
         write_register = write_register_array[register_number]

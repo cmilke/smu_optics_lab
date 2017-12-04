@@ -15,6 +15,7 @@ mx100tp = visa.ResourceManager().open_resource(mx100tp_resource_id)
 voltage_time_pair = [(2.29,1.5),(2.8,1.5),(2.54,15)] #in (volts,minutes)
 ref_clk_delay_list = [0,300,600] #pico-seconds
 sclk_delay_list = range(12,25)
+adc_type = ['NevisADC', 'ADS5272', 'ADS5294', 'Testmode']
 short_test_time = 5 #seconds
 tiny_test_time = 2 #seconds
 report = []
@@ -28,12 +29,13 @@ def main_test(ref_clk_delay, sclk_delay, adc_name, test_time, mx100tp, report):
         mx100tp.close()
         exit(1)
     success_status = main_LOCx2QA.main(fpga_resource_id, test_time, mx100tp, report)
-    return success_status
+    success = int( not success_status )
+    return success
 
 
 
 def find_optimal_delay_values(delay_success_list, report):
-    optimal_delay_indices = delay_time_selector.select(delay_success_list)
+    optimal_delay_indices = delay_time_selector.select(delay_success_list, report)
     optimal_ref_clk_delay = ref_clk_delay_list[optimal_delay_indices[0]]
     optimal_sclk_delay = sclk_delay_list[optimal_delay_indices[1]]
     report.append( 'Optimal Ref_clk delay value chosen as: '+str(optimal_ref_clk_delay) )
@@ -48,24 +50,40 @@ report_file_name = test_chip_name + '.txt'
 header_line = 'Chip ID    '+test_chip_name+'    Test time    '+test_start_time
 report.append(header_line)
 
-for voltage, test_time in voltage_time_pair:
-    #TODO: figure out which channel(s?) you are supposed to change
+for voltage, test_time_minutes in voltage_time_pair:
     mx100tp_interface.configure_voltage_level(mx100tp, 1, voltage)
     
+    print('\n####################################') 
+    print('     Voltage Set to ' + str(voltage) + '     ')
+    print('### Beginning Delay Optimisation ###')
+    print('####################################\n') 
     delay_success_list = []
     for ref_clk_delay in ref_clk_delay_list:
         sclk_delay_success_list = []
         for sclk_delay in sclk_delay_list:
-            success = main_test(ref_clk_delay, sclk_delay, 'NevisADC', short_test_time, mx100tp, report)
+            print('\n###Testing (refclk,sclk) delay: '+str(ref_clk_delay)+','+str(sclk_delay)+'###\n')
+            success = main_test(ref_clk_delay, sclk_delay, adc_type[1], short_test_time, mx100tp, report)
             sclk_delay_success_list.append(success)
         delay_success_list.append(sclk_delay_success_list)
-    optimal_ref_clk_delay, optimal_sclk_delay = find_optimal_delay_values(delay_success_list)
-    
-    main_test(optimal_ref_clk_delay, optimal_sclk_delay, 'NevisADC', test_time)
-    for adc_name in ['ADS5272', 'ADS5294', 'Testmode']:
-        main_test(optimal_ref_clk_delay, optimal_sclk_delay, adc_name, mx100tp, tiny_test_time)   
+    optimal_ref_clk_delay, optimal_sclk_delay = find_optimal_delay_values(delay_success_list, report)
+
+    print('\n##############################') 
+    print('### Beginning Primary Test ###')
+    print('##############################\n') 
+    test_time = test_time_minutes*60 #minutes to seconds
+    main_test(optimal_ref_clk_delay, optimal_sclk_delay, adc_type[0], test_time, mx100tp, report)
+
+    print('\n#############################') 
+    print('### Beginning ADC Testing ###')
+    print('#############################\n') 
+    for adc_name in adc_type[1:]:
+        main_test(optimal_ref_clk_delay, optimal_sclk_delay, adc_name, tiny_test_time, mx100tp, report)   
 mx100tp.close()
 
+
+print('\n###########################') 
+print('### ALL TESTS COMPLETED ###')
+print('###########################\n') 
 report_log = open(report_filename, 'w')
 for line in report: report_log.write(line)
 report_log.close()

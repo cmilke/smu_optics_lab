@@ -6,23 +6,24 @@ import testing_utils
 
 
 
-register_value_file = 'register_values.dat'
-fpga_confirmation_response = bytes('3','ascii')
-correct_status = [1,2,2,0,0]
+_register_value_file = 'register_values.dat'
+_fpga_confirmation_response = bytes('3','ascii')
+_correct_status = [1,2,2,0,0]
 
-fpga_uart_communication_protocol_template = [0x4E, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
+_fpga_uart_communication_protocol_template = [0x4E, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
 
-strobe_command = [0x4E, 0x1B, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x1B, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+_strobe_command = [0x4E, 0x1B, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x1B, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
                   0x4E, 0x1B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x1B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
 
-start_command = [0x4E, 0x1C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x1C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+_start_command = [0x4E, 0x1C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x1C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
                  0x4E, 0x1C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x1C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
 
-read_command = [0x4F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+_read_command = [0x4F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
 
-param_check_array = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x00, 0xFFF, 0x00]
+_param_check_array = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x00, 0xFFF, 0x00]
 
-correct_error_count = [0]*20
+_correct_error_count = [0]*20
+_ack_read_length = 208
 
 
 
@@ -68,7 +69,7 @@ def paramameter_generator(register_values):
         value_remainder = value % bit_slice
         value_quotient = int(value / bit_slice)
 
-        new_parameter = fpga_uart_communication_protocol_template[:]
+        new_parameter = _fpga_uart_communication_protocol_template[:]
         new_parameter[1] = register
         new_parameter[2] = value_remainder
         new_parameter[3] = value_quotient
@@ -85,10 +86,10 @@ def set_parameters(fpga, register_values):
     parameter_list = paramameter_generator(register_values)
     for parameter in parameter_list:
         command = testing_utils.array_to_rawbytes(parameter)
-        print(parameter)
         fpga.write_raw(command)
-        response, status = fpga.visalib.read(fpga.session, 1 )
-        if response != fpga_confirmation_response:
+        response_bytes = 1
+        response, status = fpga.visalib.read(fpga.session, response_bytes )
+        if response != _fpga_confirmation_response:
             print("WrongAck on parameter setting")
             print("Given ACK value is: " + str(response))
             exit(1)
@@ -97,30 +98,31 @@ def set_parameters(fpga, register_values):
 
 
 def param_strobe(fpga):
-    strobe_command_bytes = testing_utils.array_to_rawbytes(strobe_command) 
+    strobe_command_bytes = testing_utils.array_to_rawbytes(_strobe_command) 
     fpga.write_raw(strobe_command_bytes)
     response, status = fpga.visalib.read(fpga.session, 2)
-    if response != (fpga_confirmation_response + fpga_confirmation_response):
+    if response != (_fpga_confirmation_response + _fpga_confirmation_response):
         print("WrongAck on strobe")
         exit(1)
 
 
 
 def locx2_start(fpga):
-    start_command_bytes = testing_utils.array_to_rawbytes(start_command) 
+    start_command_bytes = testing_utils.array_to_rawbytes(_start_command) 
     fpga.write_raw(start_command_bytes)
     response, status = fpga.visalib.read(fpga.session, 2)
-    if response != (fpga_confirmation_response + fpga_confirmation_response):
+    if response != (_fpga_confirmation_response + _fpga_confirmation_response):
         print("WrongAck on start")
         exit(1)
 
 
 
 def locx2_read(fpga):
-    read_command_bytes = testing_utils.array_to_rawbytes(read_command)
+    read_command_bytes = testing_utils.array_to_rawbytes(_read_command)
     fpga.write_raw(read_command_bytes)
-    response, status = fpga.visalib.read(fpga.session, 208)
-    return testing_utils.rawbytes_to_array(response)
+    response, status = fpga.visalib.read(fpga.session, _ack_read_length)
+    ack = testing_utils.rawbytes_to_array(response)
+    return ack
 
 
 
@@ -135,7 +137,6 @@ def param_check(params):
     check_array += [ params[24][1] ]
     check_array += [ params[26][1] ]
     check_array += [0xAA]
-    print("check array equals: " + str(check_array))
     return check_array
 
     
@@ -204,11 +205,11 @@ def data_extract(ack):
 
 
 def main(fpga_resource_id, scan_time, mx100tp, report):
-    register_values = read_register_values(register_value_file)
+    register_values = read_register_values(_register_value_file)
     fpga = open_serial_port(fpga_resource_id)
-    print('Setting LOCx2 parameters:')
+    print('Setting LOCx2 parameters... ', end='')
     set_parameters(fpga, register_values)
-    print('\nLOCx2 parameters set, ', end='')
+    print('set, ', end='')
     param_strobe(fpga)
     print(' strobed, and ', end='')
     locx2_start(fpga)
@@ -225,6 +226,11 @@ def main(fpga_resource_id, scan_time, mx100tp, report):
     error_check_list = [2] + [0]*11
     while (elapsed_time < scan_time):
         ack = locx2_read(fpga)
+        if len(ack) != _ack_read_length:
+            reading_error = True
+            print('ACK Length is wrong! Length = ' + str(len(ack)) )
+            break
+
         params_read, ch8_results, ch9_results = data_extract(ack)
         ch8_error_count_is_wrong = ch8_results != error_check_list
         ch9_error_count_is_wrong = ch9_results != error_check_list
@@ -238,10 +244,15 @@ def main(fpga_resource_id, scan_time, mx100tp, report):
             break
 
         time.sleep(0.5)
-        current = mx100tp_interface.measure_current(mx100tp, 1)
+        current = mx100tp_interface.measure_current(mx100tp, 1).strip()
         elapsed_time = time.time() - scan_start_time
-        status_update = 'Time passed = '+str(elapsed_time)+' ; IDD (A) = '+str(current)
+        time_readout = format( elapsed_time, '.01f' )
+        status_update = 'Time passed = '+time_readout+' ; IDD (A) = '+current
         print(status_update)
         report.append(status_update)
+    fpga.clear()
     fpga.close()
+
+    if not reading_error:
+        print('Delay value tested without error')
     return reading_error
