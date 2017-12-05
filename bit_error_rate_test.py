@@ -16,7 +16,8 @@ voltage_time_pair = [(2.29,1.5),(2.8,1.5),(2.54,15)] #in (volts,minutes)
 ref_clk_delay_list = [0,300,600] #pico-seconds
 sclk_delay_list = range(12,25)
 adc_type = ['NevisADC', 'ADS5272', 'ADS5294', 'Testmode']
-short_test_time = 5 #seconds
+#short_test_time = 5 #seconds
+short_test_time = 2 #seconds
 tiny_test_time = 2 #seconds
 report = []
 
@@ -46,23 +47,23 @@ def find_optimal_delay_values(delay_success_list, report):
     
 test_chip_name = input('Enter Chip ID: ')
 test_start_time = time.strftime('%m/%d/%Y     %H:%M:%S')
-report_file_name = test_chip_name + '.txt'
+report_filename = test_chip_name + '.txt'
 header_line = 'Chip ID    '+test_chip_name+'    Test time    '+test_start_time
 report.append(header_line)
 
 for voltage, test_time_minutes in voltage_time_pair:
     mx100tp_interface.configure_voltage_level(mx100tp, 1, voltage)
     
-    print('\n####################################') 
+    print('\n####################################')
     print('     Voltage Set to ' + str(voltage) + '     ')
     print('### Beginning Delay Optimisation ###')
-    print('####################################\n') 
+    print('####################################\n')
     delay_success_list = []
     for ref_clk_delay in ref_clk_delay_list:
         sclk_delay_success_list = []
         for sclk_delay in sclk_delay_list:
             print('\n###Testing (refclk,sclk) delay: '+str(ref_clk_delay)+','+str(sclk_delay)+'###\n')
-            success = main_test(ref_clk_delay, sclk_delay, adc_type[1], short_test_time, mx100tp, report)
+            success = main_test(ref_clk_delay, sclk_delay, adc_type[0], short_test_time, mx100tp, report)
             sclk_delay_success_list.append(success)
         delay_success_list.append(sclk_delay_success_list)
     optimal_ref_clk_delay, optimal_sclk_delay = find_optimal_delay_values(delay_success_list, report)
@@ -70,7 +71,7 @@ for voltage, test_time_minutes in voltage_time_pair:
     print('\n##############################') 
     print('### Beginning Primary Test ###')
     print('##############################\n') 
-    test_time = test_time_minutes*60 #minutes to seconds
+    test_time = test_time_minutes#*60 #minutes to seconds
     main_test(optimal_ref_clk_delay, optimal_sclk_delay, adc_type[0], test_time, mx100tp, report)
 
     print('\n#############################') 

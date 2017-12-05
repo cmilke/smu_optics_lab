@@ -66,7 +66,8 @@ def usb_12c_wr(visa_resource_name, write_mode, read_mode, command):
     data_read=-1
     if read_mode:
         bytes_to_read = usb_iss.bytes_in_buffer
-        raw_byte, status = usb_iss.visalib.read(usb_iss.session, bytes_to_read )
+        with usb_iss.ignore_warning(visa.constants.VI_SUCCESS_MAX_CNT):
+            raw_byte, status = usb_iss.visalib.read(usb_iss.session, bytes_to_read )
         data_read = int.from_bytes(raw_byte, byteorder='big')
     usb_iss.close()
     return data_read
@@ -78,25 +79,31 @@ def main(ref_clk_delay, sclk_delay, adc_name, usb_iss_name, report):
     delay_array = [sclk_delay]*4
     generated_byte_array = locx2_regs_gen(adc_type, ref_clk_delay, delay_array)
 
-    print("I2C is filling registers")
-    usb_12c_wr(usb_iss_name, True, False, init_command)
-    for register_number in range( len(write_register_array) ):
-        write_register = write_register_array[register_number]
-        generated_byte = generated_byte_array[register_number]
-        write_command = [0x53, write_register, generated_byte]
-        usb_12c_wr(usb_iss_name, True, False, write_command)
+    #Try setting parameter 10 times before giving up and failing
+    read_comparison_failed = True
+    max_number_of_setting_attempts = 10
+    for attempt in range(max_number_of_setting_attempts):
+        print("I2C attempt " + str(attempt) )
+        print("I2C is filling registers")
+        usb_12c_wr(usb_iss_name, True, False, init_command)
+        for register_number in range( len(write_register_array) ):
+            write_register = write_register_array[register_number]
+            generated_byte = generated_byte_array[register_number]
+            write_command = [0x53, write_register, generated_byte]
+            usb_12c_wr(usb_iss_name, True, False, write_command)
 
-    print("I2C is reading back registers")
-    read_comparison_failed = False
-    usb_12c_wr(usb_iss_name, True, False, init_command)
-    for register_number in range( len(read_register_array) ):
-        read_register = read_register_array[register_number]
-        generated_byte = generated_byte_array[register_number]
-        read_command = [0x53, read_register]
-        data_read_out = usb_12c_wr(usb_iss_name, True, True, read_command)
-        comparison_byte = data_read_out
-        read_comparison_failed = comparison_byte != generated_byte
-        if read_comparison_failed: break
+        print("I2C is reading back registers")
+        usb_12c_wr(usb_iss_name, True, False, init_command)
+        for register_number in range( len(read_register_array) ):
+            read_register = read_register_array[register_number]
+            generated_byte = generated_byte_array[register_number]
+            read_command = [0x53, read_register]
+            data_read_out = usb_12c_wr(usb_iss_name, True, True, read_command)
+            comparison_byte = data_read_out
+            read_comparison_failed = comparison_byte != generated_byte
+            if read_comparison_failed: break
+
+        if not read_comparison_failed: break
 
     if read_comparison_failed:
         print("An error was encountered while reading back registers!")

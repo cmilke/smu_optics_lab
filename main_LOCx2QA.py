@@ -120,6 +120,7 @@ def locx2_start(fpga):
 def locx2_read(fpga):
     read_command_bytes = testing_utils.array_to_rawbytes(_read_command)
     fpga.write_raw(read_command_bytes)
+    time.sleep(0.1)
     response, status = fpga.visalib.read(fpga.session, _ack_read_length)
     ack = testing_utils.rawbytes_to_array(response)
     return ack
@@ -250,7 +251,6 @@ def main(fpga_resource_id, scan_time, mx100tp, report):
         status_update = 'Time passed = '+time_readout+' ; IDD (A) = '+current
         print(status_update)
         report.append(status_update)
-    fpga.clear()
     fpga.close()
 
     if not reading_error:
