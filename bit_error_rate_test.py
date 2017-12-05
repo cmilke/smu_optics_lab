@@ -23,6 +23,14 @@ report = []
 
 
 
+def log_output(report, report_filename):
+    report_log = open(report_filename, 'w')
+    for line in report:
+        report_log.write(line+'\n')
+    report_log.close()
+
+
+
 def main_test(ref_clk_delay, sclk_delay, adc_name, test_time, mx100tp, report):
     register_set_status = LOCx2_SetReg.main(ref_clk_delay, sclk_delay, adc_name, usb_iss_resource_id, report)
     if register_set_status != True:
@@ -31,6 +39,8 @@ def main_test(ref_clk_delay, sclk_delay, adc_name, test_time, mx100tp, report):
         exit(1)
     success_status = main_LOCx2QA.main(fpga_resource_id, test_time, mx100tp, report)
     success = int( not success_status )
+
+    log_output(report, report_filename)
     return success
 
 
@@ -85,6 +95,4 @@ mx100tp.close()
 print('\n###########################') 
 print('### ALL TESTS COMPLETED ###')
 print('###########################\n') 
-report_log = open(report_filename, 'w')
-for line in report: report_log.write(line)
-report_log.close()
+log_output(report, report_filename)

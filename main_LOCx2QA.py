@@ -48,13 +48,15 @@ def read_register_values(file_name):
 
 
 def open_serial_port(visa_resource_name):
-    fpga = visa.ResourceManager().open_resource(visa_resource_name,
-                                                            open_timeout=10000, #10 seconds
-                                                            resource_pyclass=pyvisa.resources.SerialInstrument,
-                                                            baud_rate=115200,
-                                                            data_bits=8,
-                                                            parity=pyvisa.constants.Parity.none,
-                                                            stop_bits = pyvisa.constants.StopBits.one)
+    fpga = visa.ResourceManager().open_resource(visa_resource_name)
+    fpga.open_timeout=10000 #10 seconds
+    fpga.resource_pyclass=pyvisa.resources.SerialInstrument
+    fpga.baud_rate=115200
+    fpga.data_bits=8
+    fpga.parity=pyvisa.constants.Parity.none
+    fpga.stop_bits = pyvisa.constants.StopBits.one
+    fpga.read_termination = None
+    fpga.write_termination = None
     return fpga
 
 
@@ -88,7 +90,8 @@ def set_parameters(fpga, register_values):
         command = testing_utils.array_to_rawbytes(parameter)
         fpga.write_raw(command)
         response_bytes = 1
-        response, status = fpga.visalib.read(fpga.session, response_bytes )
+        with fpga.ignore_warning(visa.constants.VI_SUCCESS_MAX_CNT):
+            response, status = fpga.visalib.read(fpga.session, response_bytes )
         if response != _fpga_confirmation_response:
             print("WrongAck on parameter setting")
             print("Given ACK value is: " + str(response))
@@ -100,7 +103,8 @@ def set_parameters(fpga, register_values):
 def param_strobe(fpga):
     strobe_command_bytes = testing_utils.array_to_rawbytes(_strobe_command) 
     fpga.write_raw(strobe_command_bytes)
-    response, status = fpga.visalib.read(fpga.session, 2)
+    with fpga.ignore_warning(visa.constants.VI_SUCCESS_MAX_CNT):
+        response, status = fpga.visalib.read(fpga.session, 2)
     if response != (_fpga_confirmation_response + _fpga_confirmation_response):
         print("WrongAck on strobe")
         exit(1)
@@ -110,7 +114,8 @@ def param_strobe(fpga):
 def locx2_start(fpga):
     start_command_bytes = testing_utils.array_to_rawbytes(_start_command) 
     fpga.write_raw(start_command_bytes)
-    response, status = fpga.visalib.read(fpga.session, 2)
+    with fpga.ignore_warning(visa.constants.VI_SUCCESS_MAX_CNT):
+        response, status = fpga.visalib.read(fpga.session, 2)
     if response != (_fpga_confirmation_response + _fpga_confirmation_response):
         print("WrongAck on start")
         exit(1)
@@ -120,8 +125,17 @@ def locx2_start(fpga):
 def locx2_read(fpga):
     read_command_bytes = testing_utils.array_to_rawbytes(_read_command)
     fpga.write_raw(read_command_bytes)
-    time.sleep(0.1)
-    response, status = fpga.visalib.read(fpga.session, _ack_read_length)
+    with fpga.ignore_warning(visa.constants.VI_SUCCESS_MAX_CNT):
+        bytes_read = 0
+        response = bytes()
+        #pyvisa seems to have issues reading many bytes at once.
+        #To deal with this, if pyvisa fails to read all the bytes I asked it to,
+        #then I send it back to grab more, until it gets them all.
+        while( bytes_read < _ack_read_length ):
+            bytes_to_read = _ack_read_length - bytes_read
+            response_piece, status = fpga.visalib.read(fpga.session, bytes_to_read)
+            response += response_piece
+            bytes_read = len( response )
     ack = testing_utils.rawbytes_to_array(response)
     return ack
 
@@ -179,7 +193,6 @@ def extract_channel(ack_bits, sync_status_start, crc_flag_start, sync_loss_count
 def data_extract(ack):
     flipped_ack = []
     for n in range( 0, len(ack), 2):
-        #FIXME: there's some kind of out-of-bounds error here
         even_ack = ack[n]
         odd_ack = ack[n+1]
         flipped_ack.append(odd_ack)
@@ -247,8 +260,8 @@ def main(fpga_resource_id, scan_time, mx100tp, report):
         time.sleep(0.5)
         current = mx100tp_interface.measure_current(mx100tp, 1).strip()
         elapsed_time = time.time() - scan_start_time
-        time_readout = format( elapsed_time, '.01f' )
-        status_update = 'Time passed = '+time_readout+' ; IDD (A) = '+current
+        time_readout = time.strftime('%H:%m:%S')
+        status_update = 'At time = '+time_readout+' ; IDD (A) = '+current
         print(status_update)
         report.append(status_update)
     fpga.close()
