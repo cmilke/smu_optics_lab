@@ -80,32 +80,33 @@ def process_dead_zone(dead_zone, safe_zones):
 
 
 
-def display_delay_values(delay_list, safe_zones=None, dead_zones=None, optimal_zone=None):
+def delay_values_display(delay_list, safe_zones=None, dead_zones=None, optimal_zone=None):
+    display = ''
     for refclk_index, sclk_delay_list in enumerate(delay_list):
         for sclk_index, sclk_delay in enumerate(sclk_delay_list):
             delay_index = (refclk_index,sclk_index)
             if optimal_zone != None:
                 if delay_index == optimal_zone:
-                    print('!',end='')
+                    display+='!'
                 else:
-                    print(sclk_delay,end='')
+                    display+=sclk_delay
             elif safe_zones != None:
                 if delay_index in safe_zones:
                     if safe_zones[delay_index].is_safe_haven:
-                        print('!',end='')
+                        display+='!'
                     else:
-                        print(sclk_delay,end='')
+                        display+=sclk_delay
                 elif dead_zones != None:
                     if delay_index in dead_zones:
-                        print('X',end='')
+                        display+='X'
                     else:
-                        print(sclk_delay,end='')
+                        display+=sclk_delay
                 else: 
-                    print(sclk_delay,end='')
+                    display+=sclk_delay
             else:
-                print(sclk_delay,end='')
-        print()
-    print()
+                display+=sclk_delay
+        display+='\n'
+    display+='\n'
 
 
 
@@ -127,8 +128,9 @@ def select(delay_list, report):
     print('Optimal delay time chosen as: ',end='')
     print(optimal_safe_zone_index)
     print('Delay time selection map:')
-    display_delay_values(delay_list, safe_zones=safe_zones, dead_zones=dead_zones)
-    display_delay_values(delay_list, optimal_zone=optimal_safe_zone_index)
+    delay_map = delay_values_display(delay_list, optimal_zone=optimal_safe_zone_index)
+    print(delay_map)
+    report.append(delay_map)
     return optimal_safe_zone_index
 
 

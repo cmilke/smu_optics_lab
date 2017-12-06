@@ -207,6 +207,7 @@ def data_extract(ack):
     ch8_crc_error_count_start = 281
     ch8_payload_error_count_start = 1354
     channel_8_results = extract_channel(ack_bits, ch8_sync_status_start, ch8_crc_flag_start, ch8_sync_loss_count_start, ch8_crc_error_count_start, ch8_payload_error_count_start)
+    output.append(str(channel_8_results)
     
     ch9_sync_status_start = 54
     ch9_crc_flag_start = 82
@@ -214,6 +215,7 @@ def data_extract(ack):
     ch9_crc_error_count_start = 281
     ch9_payload_error_count_start = 1058
     channel_9_results = extract_channel(ack_bits, ch9_sync_status_start, ch9_crc_flag_start, ch9_sync_loss_count_start, ch9_crc_error_count_start, ch9_payload_error_count_start)
+    output.append(str(channel_9_results)
     
     return(check_list, channel_8_results, channel_9_results)
 
@@ -238,6 +240,8 @@ def main(fpga_resource_id, scan_time, mx100tp, report):
     elapsed_time = 0.0
     scan_start_time = time.time()
     error_check_list = [2] + [0]*11
+    readout_interval = 30 #seconds
+    time_since_readout = 0
     while (elapsed_time < scan_time):
         ack = locx2_read(fpga)
         if len(ack) != _ack_read_length:
@@ -258,12 +262,15 @@ def main(fpga_resource_id, scan_time, mx100tp, report):
             break
 
         time.sleep(0.5)
-        current = mx100tp_interface.measure_current(mx100tp, 1).strip()
         elapsed_time = time.time() - scan_start_time
-        time_readout = time.strftime('%H:%m:%S')
-        status_update = 'At time = '+time_readout+' ; IDD (A) = '+current
-        print(status_update)
-        report.append(status_update)
+        time_since_readout += elapsed_time
+        if (time_since_readout > readout_interval):
+            current = mx100tp_interface.measure_current(mx100tp, 1).strip()
+            time_readout = time.strftime('%H:%m:%S')
+            status_update = 'At time = '+time_readout+' ; IDD (A) = '+current
+            print(status_update)
+            report.append(status_update)
+            time_since_readout = 0
     fpga.close()
 
     if not reading_error:

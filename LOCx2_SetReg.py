@@ -105,6 +105,9 @@ def main(ref_clk_delay, sclk_delay, adc_name, usb_iss_name, report):
 
         if not read_comparison_failed: break
 
+    report.append('Number of cycles needed to set I2C module = '+str(attempt))
+    report.append('refclk_delay = ' + str(ref_clk_delay))
+    report.append('sclk_delay = ' + str(sclk_delay))
     if read_comparison_failed:
         print("An error was encountered while reading back registers!")
     else:
