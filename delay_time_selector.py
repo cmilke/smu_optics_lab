@@ -89,24 +89,25 @@ def delay_values_display(delay_list, safe_zones=None, dead_zones=None, optimal_z
                 if delay_index == optimal_zone:
                     display+='!'
                 else:
-                    display+=sclk_delay
+                    display+=str(sclk_delay)
             elif safe_zones != None:
                 if delay_index in safe_zones:
                     if safe_zones[delay_index].is_safe_haven:
                         display+='!'
                     else:
-                        display+=sclk_delay
+                        display+=str(sclk_delay)
                 elif dead_zones != None:
                     if delay_index in dead_zones:
                         display+='X'
                     else:
-                        display+=sclk_delay
+                        display+=str(sclk_delay)
                 else: 
-                    display+=sclk_delay
+                    display+=str(sclk_delay)
             else:
-                display+=sclk_delay
+                display+=str(sclk_delay)
         display+='\n'
     display+='\n'
+    return display
 
 
 
@@ -125,12 +126,13 @@ def select(delay_list, report):
     sorted_safe_zones = sorted( list(safe_zones.values()) )
     optimal_safe_zone_index = sorted_safe_zones[0].delay_index
 
-    print('Optimal delay time chosen as: ',end='')
-    print(optimal_safe_zone_index)
-    print('Delay time selection map:')
     delay_map = delay_values_display(delay_list, optimal_zone=optimal_safe_zone_index)
+    print('Delay time selection map:')
     print(delay_map)
+    report.append('\nDelay time selection map:')
     report.append(delay_map)
+
+    print('Optimal delay time chosen as: ' + str(optimal_safe_zone_index))
     return optimal_safe_zone_index
 
 

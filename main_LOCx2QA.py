@@ -207,7 +207,6 @@ def data_extract(ack):
     ch8_crc_error_count_start = 281
     ch8_payload_error_count_start = 1354
     channel_8_results = extract_channel(ack_bits, ch8_sync_status_start, ch8_crc_flag_start, ch8_sync_loss_count_start, ch8_crc_error_count_start, ch8_payload_error_count_start)
-    output.append(str(channel_8_results)
     
     ch9_sync_status_start = 54
     ch9_crc_flag_start = 82
@@ -215,7 +214,6 @@ def data_extract(ack):
     ch9_crc_error_count_start = 281
     ch9_payload_error_count_start = 1058
     channel_9_results = extract_channel(ack_bits, ch9_sync_status_start, ch9_crc_flag_start, ch9_sync_loss_count_start, ch9_crc_error_count_start, ch9_payload_error_count_start)
-    output.append(str(channel_9_results)
     
     return(check_list, channel_8_results, channel_9_results)
 
@@ -259,6 +257,8 @@ def main(fpga_resource_id, scan_time, mx100tp, report):
             print( 'ch8 error? ' + str(ch8_error_count_is_wrong) )
             print( 'ch9 error? ' + str(ch9_error_count_is_wrong) )
             print( 'parameter check error? ' + str(params_read_are_wrong) )
+            report.append('Ch8 sync status: ' + str(ch8_results))
+            report.append('Ch9 sync status: ' + str(ch9_results))
             break
 
         time.sleep(0.5)
@@ -275,4 +275,6 @@ def main(fpga_resource_id, scan_time, mx100tp, report):
 
     if not reading_error:
         print('Delay value tested without error')
+        report.append('Ch8 sync status: ' + str(error_check_list))
+        report.append('Ch9 sync status: ' + str(error_check_list))
     return reading_error

@@ -16,8 +16,7 @@ voltage_time_pair = [(2.29,1.5),(2.8,1.5),(2.54,15)] #in (volts,minutes)
 ref_clk_delay_list = [0,300,600] #pico-seconds
 sclk_delay_list = range(12,25)
 adc_type = ['NevisADC', 'ADS5272', 'ADS5294', 'Testmode']
-#short_test_time = 5 #seconds
-short_test_time = 2 #seconds
+short_test_time = 5 #seconds
 tiny_test_time = 2 #seconds
 report_filename = ''
 report = []
@@ -64,6 +63,8 @@ def find_optimal_delay_values(delay_success_list, report):
 test_chip_name = input('Enter Chip ID: ')
 test_start_time = time.strftime('%m/%d/%Y     %H:%M:%S')
 report_filename = test_chip_name + '.txt'
+report_log = open(report_filename, 'w')
+report_log.close()
 header_line = 'Chip ID    '+test_chip_name+'    Test time    '+test_start_time
 report.append(header_line)
 
@@ -71,7 +72,7 @@ all_voltages_successful = True
 for voltage, test_time_minutes in voltage_time_pair:
     success_list = []
     mx100tp_interface.configure_voltage_level(mx100tp, 1, voltage)
-    report.append('\nVDD (V) = ' + str(voltage))
+    report.append('\n\nVDD (V) = ' + str(voltage))
     
     print('\n####################################')
     print('     Voltage Set to ' + str(voltage) + '     ')
@@ -86,16 +87,17 @@ for voltage, test_time_minutes in voltage_time_pair:
             sclk_delay_success_list.append(success)
         delay_success_list.append(sclk_delay_success_list)
     optimal_ref_clk_delay, optimal_sclk_delay = find_optimal_delay_values(delay_success_list, report)
-    log_output(output)
+    report.append('\nBeggining long-term testing')
+    log_output(report)
 
     print('\n##############################') 
     print('### Beginning Primary Test ###')
     print('##############################\n') 
-    test_time = test_time_minutes#*60 #minutes to seconds
+    test_time = test_time_minutes*60 #minutes to seconds
     main_success = main_test(optimal_ref_clk_delay, optimal_sclk_delay, adc_type[0], test_time, mx100tp, report)
     success_list.append(main_success)
-    output.append('Primary test success = ' + main_success)
-    log_output(ouput)
+    report.append('Primary test success = ' + str(main_success))
+    log_output(report)
 
     print('\n#############################') 
     print('### Beginning ADC Testing ###')
@@ -103,8 +105,8 @@ for voltage, test_time_minutes in voltage_time_pair:
     for adc_name in adc_type[1:]:
         adc_success = main_test(optimal_ref_clk_delay, optimal_sclk_delay, adc_name, tiny_test_time, mx100tp, report)   
         success_list.append(not adc_success)
-        output.append('ADC ' + adc_name + ' success = ' + adc_success)
-        log_output(ouput)
+        report.append('ADC ' + adc_name + ' success = ' + str(adc_success))
+        log_output(report)
 
     full_success = ( success_list == [True]*4 )
     success_string = 'Testing for voltage level ' + str(voltage)
@@ -112,8 +114,8 @@ for voltage, test_time_minutes in voltage_time_pair:
     else:
         success_string += ' encountered errors!'
         all_voltages_successful = False
-    output.append(success_string)
-    log_output(output)
+    report.append(success_string)
+    log_output(report)
 mx100tp.close()
 
 
@@ -121,7 +123,7 @@ print('\n###########################')
 print('### ALL TESTS COMPLETED ###')
 print('###########################\n') 
 if all_voltages_successful:
-    output.append('\nAll tests were completed succesfully!')
+    report.append('\nAll tests were completed succesfully!')
 else:
-    output.append('\nSome tests encountered errors')
-log_output(report, report_filename)
+    report.append('\nSome tests encountered errors')
+log_output(report)
